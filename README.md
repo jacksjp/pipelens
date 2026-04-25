@@ -2,15 +2,6 @@
 
 Piplens is a project focused on identifying and solving real-world issues in modern data pipelines across enterprise platforms like Snowflake, Databricks, and BigQuery.
 
-## Project Name Ideas
-
-- Pipeline Pulse
-- DataFlow Sentinel
-- Warehouse Watchtower
-- QueryGuard AI
-- PipeLens
-- DataOps Code Critic
-- Pipeline Reliability Lab
 
 ## Overview
 
