@@ -1,82 +1,118 @@
-# Piplens (W.I.P)
+# Pipelens (W.I.P)
 
 Piplens is a project focused on identifying and solving real-world issues in modern data pipelines across enterprise platforms like Snowflake, Databricks, and BigQuery.
 
 
 ## Overview
 
-This project builds an agentic AI assistant that analyzes SQL and pipeline logic to detect production-grade issues before they become incidents.
+This project builds an agentic AI assistant that analyzes SQL and pipeline logic to detect production-grade issues before they become incidents. It also provides an estimated cost comparison before and after optimization so teams can quantify expected savings from the recommended changes.
 
-Core outputs:
 
-1. Findings report (performance, correctness, reliability, style, security)
-2. Improved code recommendations with explanation of every suggested change
+## Current Scope
 
-The main goal is to make data teams faster, safer, and more consistent when working with complex analytics pipelines.
+- Platform focus: enterprise data platforms
+- Current input types by object family:
+	- SQL-based objects: stored procedures, ad-hoc SQL queries, views, materialized views, UDFs, and DDL scripts
+	- Python-based objects: Python stored procedures, Python UDF handlers
+	- Spark-based objects: Spark SQL statements, PySpark DataFrame transformation pipelines, and Spark job/notebook code
+- Analysis dimensions: performance, security, and style
+- Output: structured findings plus rewritten code with explanations
 
-## Why This Project
+## Future State
 
-Real-world data systems often fail due to avoidable problems such as:
+The same review workflow is intended to expand to additional analytics engineering artifacts.
 
-- Inefficient SQL patterns that increase compute cost
-- Fragile transformations that break on schema drift
-- Incorrect join/filter logic that introduces data quality issues
-- Missing safeguards around permissions, secrets, and environment separation
-- Inconsistent coding standards across teams and platforms
+- Notebooks
+- dbt models
+- SQLMesh models
+- Orcehstration models
 
-This project aims to detect these problems early and provide practical fixes.
 
-## Scope
+## Proposed Findings
 
-Current and target service coverage:
+The application returns a ranked `FindingsReport` with structured review output. Each finding is designed to include:
 
-- Snowflake
-- Databricks (SQL + Spark SQL contexts)
-- BigQuery
+- Severity rating
+- Plain-language description of the issue
+- Original offending snippet
+- Suggested rewritten code
+- Line-by-line explanation of the change
 
-Input types:
+The goal is to give data engineers and analytics engineers the same depth of review they would get from a senior peer, delivered automatically and consistently inside their existing data platform workflow.
 
-- Ad-hoc SQL queries
-- Stored procedures
-- Pipeline transformation logic (incremental models, staging-to-curated patterns)
+## Agentic AI High-Level Flow
 
-## High-Level Approach
+The application uses a LangGraph `StateGraph` with specialized nodes connected through a shared `AgentState`.
 
-The system follows an agentic analysis loop:
+```text
+[User Input: object name or SQL text]
+	      |
+	      v
+	   router
+	   |     |
+	(SP path) (query path)
+	   |     |
+	   v     v
+	schema_fetcher
+	      |
+	      v
+	+-------+--------+--------+
+	|                |        |
+	v                v        v
+performance_   security_  style_
+analyzer       auditor    reviewer
+	|                |        |
+	+-------+--------+--------+
+	      |
+	      v
+	  synthesizer
+	      |
+	      v
+	[FindingsReport]
+```
 
-1. Intake and classify query/procedure/pipeline artifact
-2. Retrieve execution and metadata context when available
-3. Run specialized analyzers in parallel (performance, correctness, security, style)
-4. Merge and rank findings by severity and impact
-5. Generate revised SQL and implementation guidance
+## How It Works
 
-## Design Principles
+1. The `router` classifies the input and decides whether the flow should use the stored procedure path or the ad-hoc query path.
+2. The `schema_fetcher` retrieves SQL text and execution context from the connected platform using read-only retrieval tools.
+3. The `performance_analyzer`, `security_auditor`, and `style_reviewer` run in parallel.
+4. The `synthesizer` merges, ranks, and formats the final findings.
 
-- Keep recommendations practical and production-oriented
-- Prefer explainable fixes over opaque rewrites
-- Enforce read-only analysis paths for connected systems
-- Keep implementation DRY and simple
-- Use structured output models for deterministic reporting
+## Architecture Choices
 
-## Proposed Findings Format
+- LangGraph: stateful orchestration, conditional routing, and parallel fan-out
+- Google Gemini: strong code understanding with structured JSON output support
+- Platform connectors: retrieval of DDL, query history, execution plans, and related metadata from connected enterprise data platforms
+- Pydantic: output validation through the `FindingsReport` model
+- Jupyter notebooks: required development format for the course project
 
-Each finding is expected to include:
+## Memory Strategy
 
-- Severity (Critical, High, Medium, Low)
-- Issue category (performance, correctness, reliability, style, security)
-- Affected snippet
-- Why it matters in production
-- Suggested fix
-- Confidence level
+The design uses two memory layers:
 
-## Repository Snapshot
+- Short-term memory via LangGraph `MemorySaver` for follow-up questions in the same session
+- Long-term memory via a local JSON history file so prior analyses can inform later runs
 
-Current workspace files:
+This allows the system to surface regressions and improvements when the same object is reviewed multiple times.
 
-- AGENTS.md
-- PROJECT_DESCRIPTION.ipynb
-- README.md
-- requirements.txt
+## Tool Use
+
+The `schema_fetcher` node relies on two read-only retrieval tools:
+
+- A source retrieval tool to fetch stored procedure DDL or recent ad-hoc query text
+- An execution-plan retrieval tool to fetch a logical execution plan for SQL statements
+
+Both tools run through read-only access patterns on the connected platform.
+
+## Safeguards
+
+The current design includes multiple guardrails:
+
+- Read-only platform access to block DML and DDL execution
+- Input validation for object names
+- Output blocking for unsafe modification statements
+- Pydantic validation for agent responses
+- Secret detection before prompts are sent to the model
 
 ## Setup
 
@@ -100,22 +136,17 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-## Roadmap
+## Repository Files
 
-- Baseline analyzer for SQL anti-pattern detection
-- Platform-aware rule packs for Snowflake, Databricks, and BigQuery
-- Structured findings schema and scoring model
-- Improved rewrite engine with side-by-side diff output
-- Benchmark suite with real incident-inspired test cases
+- AGENTS.md
+- PROJECT_DESCRIPTION.ipynb
+- README.md
+- requirements.txt
 
 ## Status
 
-This project is actively in progress. Architecture, analyzer depth, and platform coverage will continue to evolve as real use cases are validated.
+Piplens is still in active development. The notebook project description is the current design reference, and the implementation will evolve as the capstone is built and tested.
 
 ## Author
 
 Jayaprakash Sivanandam
-
-## Disclaimer
-
-Piplens is still in active development and is not MVP-ready yet. Features, architecture, and platform support are evolving and may change.
