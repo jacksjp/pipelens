@@ -1,6 +1,6 @@
-# Piplens
+# Piplens (W.I.P)
 
-Piplens is an ongoing project focused on identifying and solving real-world issues in modern data pipelines across enterprise platforms like Snowflake, Databricks, and BigQuery.
+Piplens is a project focused on identifying and solving real-world issues in modern data pipelines across enterprise platforms like Snowflake, Databricks, and BigQuery.
 
 ## Project Name Ideas
 
