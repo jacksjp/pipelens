@@ -1,6 +1,7 @@
 """FastMCP server exposing Code Critic tools and prompts."""
 
 import keyring
+import re
 from dotenv import load_dotenv
 from fastmcp import FastMCP
 from langchain_anthropic import ChatAnthropic
@@ -31,6 +32,49 @@ ALLOWED_OBJECT_TYPES = {"PROCEDURE", "TABLE", "VIEW", "FUNCTION", "TASK", "STREA
 gemma_llm = ChatGoogleGenerativeAI(model=GEMMA_MODEL)
 opus_llm = ChatAnthropic(model=OPUS_MODEL)
 sonnet_llm = ChatAnthropic(model=SONNET_MODEL)
+
+SECRET_PATTERNS = [
+    ("Anthropic API key", re.compile(r"sk-ant-[a-zA-Z0-9\-_]{20,}")),
+    ("OpenAI API key", re.compile(r"sk-[a-zA-Z0-9]{32,}")),
+    ("AWS access key", re.compile(r"AKIA[A-Z0-9]{16}")),
+    (
+        "AWS secret key assignment",
+        re.compile(r'(?i)(aws_secret_access_key\s*=\s*)["\']?[A-Za-z0-9/+=]{40}'),
+    ),
+    (
+        "Private key block",
+        re.compile(r"-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----"),
+    ),
+    (
+        "Generic API key assignment",
+        re.compile(r'(?i)(api_key|apikey)\s*=\s*["\'](?!your_|<|{|\s*$)[^"\']{8,}'),
+    ),
+    (
+        "Generic password assignment",
+        re.compile(r'(?i)(password|passwd|pwd)\s*=\s*["\'](?!your_|<|{|\s*$)[^"\']{4,}'),
+    ),
+    (
+        "Generic secret assignment",
+        re.compile(r'(?i)(secret|token)\s*=\s*["\'](?!your_|<|{|\s*$)[^"\']{8,}'),
+    ),
+    ("Credentials in URL", re.compile(r"[a-zA-Z]+://[^:@\s]+:[^@\s]{4,}@")),
+]
+
+
+def check_secrets(text: str, context: str = "LLM input") -> None:
+    """Block LLM calls when prompt text appears to contain hard-coded secrets."""
+    found = [label for label, pattern in SECRET_PATTERNS if pattern.search(text or "")]
+    if found:
+        raise ValueError(
+            f"Secret check failed before {context}. Detected: {', '.join(found)}"
+        )
+
+
+def _invoke_llm_checked(chain, messages, context: str):
+    """Run check_secrets on all message content before invoking the chain."""
+    prompt_text = "\n\n".join(str(getattr(msg, "content", "")) for msg in messages)
+    check_secrets(prompt_text, context=context)
+    return chain.invoke(messages)
 
 
 # ── Snowflake helper ──────────────────────────────────────────────────────────
@@ -124,11 +168,13 @@ def extract_etl_code_from_ddl(ddl_text: str) -> str:
     extraction_chain = gemma_llm.with_structured_output(ETLExtractionResult)
     human_prompt = f"Extract ETL code from this Snowflake DDL:\n\n{ddl_text}"
     try:
-        result = extraction_chain.invoke(
+        result = _invoke_llm_checked(
+            extraction_chain,
             [
                 SystemMessage(content=SCHEMA_FETCHER_ETL_PROMPT),
                 HumanMessage(content=human_prompt),
-            ]
+            ],
+            context="schema_fetcher ETL extraction",
         )
         return (result.etl_code or "").strip()
     except Exception:
