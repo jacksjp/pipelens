@@ -1,0 +1,46 @@
+services:
+
+  mcp-server:
+    build:
+      context: .
+      dockerfile: apps/mcp-server/Dockerfile
+    environment:
+      HOST: 0.0.0.0
+      PORT: "9000"
+    expose: ["9000"]
+
+  agent-lint-auditor:
+    build:
+      context: .
+      dockerfile: agents/Dockerfile
+      args:
+        AGENT_NAME: lint-auditor
+        AGENT_MODULE: agent_lint_auditor
+    environment:
+      PORT: "8000"
+      MCP_SERVER_URL: http://mcp-server:9000/mcp
+    expose: ["8000"]
+    depends_on:
+      - mcp-server
+
+  orchestrator:
+    build:
+      context: .
+      dockerfile: apps/orchestrator/Dockerfile
+    environment:
+      PORT: "8000"
+      AGENT_LINT_AUDITOR_URL: http://agent-lint-auditor:8000
+      MCP_SERVER_URL: http://mcp-server:9000/mcp
+    ports:
+      - "8000:8000"
+    depends_on:
+      - agent-lint-auditor
+
+  frontend:
+    build:
+      context: .
+      dockerfile: apps/frontend/Dockerfile
+    ports:
+      - "5173:80"
+    depends_on:
+      - orchestrator

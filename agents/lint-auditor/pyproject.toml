@@ -1,0 +1,16 @@
+[project]
+name = "agent-lint-auditor"
+version = "0.1.0"
+description = "Code Lint Auditor agent for SQL and Python lint/fix flows."
+requires-python = ">=3.14"
+dependencies = [
+    "common",
+    "fastmcp>=2.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/agent_lint_auditor"]

@@ -15,8 +15,8 @@ This project builds an agentic AI assistant that analyzes SQL and pipeline logic
 	- SQL-based objects: stored procedures, ad-hoc SQL queries, views, materialized views, UDFs, and DDL scripts
 	- Python-based objects: Python stored procedures, Python UDF handlers
 	- Spark-based objects: Spark SQL statements, PySpark DataFrame transformation pipelines, and Spark job/notebook code
-- Analysis dimensions: performance, security, and style
-- Output: structured findings plus rewritten code with explanations
+- Analysis dimension in active development: linting
+- Output: structured lint findings plus actionable rewrites and explanations
 
 ## Future State
 
@@ -42,41 +42,23 @@ The goal is to give data engineers and analytics engineers the same depth of rev
 
 ## Agentic AI High-Level Flow
 
-The application uses a LangGraph `StateGraph` with specialized nodes connected through a shared `AgentState`.
+The active implementation currently uses a lint-focused flow.
 
 ```text
-[User Input: object name or SQL text]
-	      |
-	      v
-	   router
-	   |     |
-	(SP path) (query path)
-	   |     |
-	   v     v
-	schema_fetcher
-	      |
-	      v
-	+-------+--------+--------+
-	|                |        |
-	v                v        v
-performance_   security_  style_
-analyzer       auditor    reviewer
-	|                |        |
-	+-------+--------+--------+
-	      |
-	      v
-	  synthesizer
-	      |
-	      v
-	[FindingsReport]
+[User Input: SQL text]
+         |
+         v
+    lint-auditor
+         |
+         v
+   [FindingsReport]
 ```
 
 ## How It Works
 
-1. The `router` classifies the input and decides whether the flow should use the stored procedure path or the ad-hoc query path.
-2. The `schema_fetcher` retrieves SQL text and execution context from the connected platform using read-only retrieval tools.
-3. The `performance_analyzer`, `security_auditor`, and `style_reviewer` run in parallel.
-4. The `synthesizer` merges, ranks, and formats the final findings.
+1. The orchestrator receives SQL input from the frontend.
+2. The `lint-auditor` validates and critiques SQL with lint-focused checks.
+3. The orchestrator maps the agent output into the shared `FindingsReport` response shape.
 
 ## Architecture Choices
 
@@ -114,34 +96,89 @@ The current design includes multiple guardrails:
 - Pydantic validation for agent responses
 - Secret detection before prompts are sent to the model
 
+## Repository layout
+
+The codebase is a uv workspace (Python) plus a single npm package (frontend).
+
+```
+Project/
+├── apps/
+│   ├── orchestrator/   FastAPI orchestrator (single user-facing entry)
+│   ├── mcp-server/     FastMCP server exposing shared tools
+│   └── frontend/       Vite + React + TypeScript UI
+├── agents/
+│   ├── Dockerfile      Generic image, parameterized by AGENT_NAME / AGENT_MODULE
+│   └── lint-auditor/
+├── packages/
+│   └── common/         Shared models (FindingsReport), prompts loader, agent runner
+├── scripts/            lint / test / dev helpers (.sh and .ps1)
+├── docker-compose.yml  Brings up the full stack
+└── pyproject.toml      uv workspace root
+```
+
 ## Setup
 
-### 1. Activate virtual environment
-
-Windows:
-
-```powershell
-.venv\Scripts\Activate.ps1
-```
-
-macOS/Linux:
+### 1. Install Python dependencies (uv workspace)
 
 ```bash
-source venv/bin/activate
+uv sync --all-packages
 ```
 
-### 2. Install dependencies
+### 2. Install frontend dependencies (npm)
 
 ```bash
-pip install -r requirements.txt
+npm install --prefix apps/frontend
 ```
 
-## Repository Files
+### 3. Configure environment
 
-- AGENTS.md
-- PROJECT_DESCRIPTION.ipynb
-- README.md
-- requirements.txt
+```bash
+cp .env.example .env
+# edit .env to add ANTHROPIC_API_KEY, GOOGLE_API_KEY
+```
+
+## Running the stack
+
+### Without Docker (local dev)
+
+```bash
+# Linux / macOS
+bash scripts/dev.sh
+
+# Windows / PowerShell
+scripts/dev.ps1
+```
+
+This starts the MCP server, the lint-auditor service, the orchestrator, and the
+Vite dev server. The UI is at http://localhost:5173, the orchestrator at
+http://localhost:8000.
+
+### With Docker (compose)
+
+```bash
+docker compose up --build
+```
+
+Same surface; orchestrator on host port 8000, frontend on host port 5173.
+
+### Building a single agent image
+
+The `agents/Dockerfile` is shared; the agent is selected by build args:
+
+```bash
+docker build -f agents/Dockerfile \
+	--build-arg AGENT_NAME=lint-auditor \
+	--build-arg AGENT_MODULE=agent_lint_auditor \
+	-t code-critic/agent-lint-auditor .
+```
+
+## Tests and linting
+
+```bash
+bash scripts/test.sh       # uv run pytest + npm test
+bash scripts/lint.sh       # ruff + mypy + eslint + prettier
+bash scripts/lint.sh --fix # auto-fix
+```
 
 ## Status
 

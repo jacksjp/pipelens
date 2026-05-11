@@ -1,0 +1,92 @@
+[project]
+name = "code-critic"
+version = "0.1.0"
+description = "SQL Code Critic — multi-agent system (workspace root, not installed)"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "snowflake-snowpark-python>=1.50.0",
+    "sqlfluff>=4.1.0",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.15.12",
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "pytest-cov>=5.0",
+    "httpx>=0.27",
+    "respx>=0.21",
+    "mypy>=1.11",
+    "pre-commit>=3.7",
+]
+
+[tool.uv.workspace]
+members = [
+    "apps/orchestrator",
+    "apps/mcp-server",
+    "agents/*",
+    "packages/*",
+]
+
+[tool.uv.sources]
+common = { workspace = true }
+agent-lint-auditor = { workspace = true }
+orchestrator = { workspace = true }
+mcp-server = { workspace = true }
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+extend-exclude = [
+    "__pycache__",
+    "apps/frontend",
+    ".venv",
+    ".claude",
+    # Legacy capstone-draft artifacts moved out of the active tree on
+    # 2026-05-06. Preserved in git history; do not lint/format them.
+    "archive",
+    "notebooks",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+    "SIM", # flake8-simplify
+]
+ignore = [
+    "E501", # line too long (handled by formatter)
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.mypy]
+python_version = "3.14"
+strict = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+exclude = [
+    "^\\.venv/",
+    "^apps/frontend/",
+    "/tests/",
+    "^\\.claude/",
+    "^archive/",
+    "^notebooks/",
+]
+
+[[tool.mypy.overrides]]
+module = ["a2a.*", "fastmcp.*", "snowflake.*", "keyring.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["apps", "agents", "packages"]
+python_files = ["test_*.py", "*_test.py"]
+addopts = "-ra --strict-markers --import-mode=importlib"
