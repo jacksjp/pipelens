@@ -1,31 +1,34 @@
-# Pipelens (W.I.P)
+# PipeLens (W.I.P)
 
-Piplens is a project focused on identifying and solving real-world issues in modern data pipelines across enterprise platforms like Snowflake, Databricks, and BigQuery.
+PipeLens is an agentic AI project focused on identifying and solving real-world issues in modern data pipelines across enterprise platforms such as Snowflake, Databricks, and BigQuery.
 
 
 ## Overview
 
-This project builds an agentic AI assistant that analyzes SQL and pipeline logic to detect production-grade issues before they become incidents. It also provides an estimated cost comparison before and after optimization so teams can quantify expected savings from the recommended changes.
+The long-term goal is to build an assistant that reviews SQL, Python, Spark, and analytics engineering artifacts to detect production-grade issues before they become incidents. Over time, the platform is intended to include optimization and cost-impact analysis so teams can quantify expected savings from recommended changes.
 
 
-## Current Scope
+## Current Scope (In Progress)
 
 - Platform focus: enterprise data platforms
 - Current input types by object family:
 	- SQL-based objects: stored procedures, ad-hoc SQL queries, views, materialized views, UDFs, and DDL scripts
 	- Python-based objects: Python stored procedures, Python UDF handlers
 	- Spark-based objects: Spark SQL statements, PySpark DataFrame transformation pipelines, and Spark job/notebook code
-- Analysis dimension in active development: linting
-- Output: structured lint findings plus actionable rewrites and explanations
+- Analysis dimension currently implemented: linting-first workflow
+- Output today: structured lint findings plus actionable rewrites and explanations
 
-## Future State
+## Future State (Original Plan)
 
-The same review workflow is intended to expand to additional analytics engineering artifacts.
+The same review workflow is intended to expand well beyond linting into a broader pipeline quality and optimization system.
 
 - Notebooks
 - dbt models
 - SQLMesh models
-- Orcehstration models
+- Orchestration models
+- Performance diagnostics
+- Security checks
+- Cost-aware optimization recommendations
 
 
 ## Proposed Findings
@@ -42,7 +45,7 @@ The goal is to give data engineers and analytics engineers the same depth of rev
 
 ## Agentic AI High-Level Flow
 
-The active implementation currently uses a lint-focused flow.
+The active implementation currently uses a lint-focused path while the full multi-agent roadmap remains in scope.
 
 ```text
 [User Input: SQL text]
@@ -54,32 +57,32 @@ The active implementation currently uses a lint-focused flow.
    [FindingsReport]
 ```
 
-## How It Works
+## How It Works (Current)
 
-1. The orchestrator receives SQL input from the frontend.
-2. The `lint-auditor` validates and critiques SQL with lint-focused checks.
-3. The orchestrator maps the agent output into the shared `FindingsReport` response shape.
+1. The orchestrator receives code input from the frontend.
+2. The lint-auditor validates and critiques code with lint-focused checks.
+3. The orchestrator maps agent output into the shared FindingsReport response shape.
 
 ## Architecture Choices
 
 - LangGraph: stateful orchestration, conditional routing, and parallel fan-out
-- Google Gemini: strong code understanding with structured JSON output support
+- Configurable LLM providers: OpenAI, Anthropic, and Google model routing via agents.yaml
 - Platform connectors: retrieval of DDL, query history, execution plans, and related metadata from connected enterprise data platforms
-- Pydantic: output validation through the `FindingsReport` model
+- Pydantic: output validation through the FindingsReport model
 - Jupyter notebooks: required development format for the course project
 
-## Memory Strategy
+## Memory Strategy (Planned)
 
-The design uses two memory layers:
+The design keeps two memory layers:
 
-- Short-term memory via LangGraph `MemorySaver` for follow-up questions in the same session
+- Short-term memory via LangGraph MemorySaver for follow-up questions in the same session
 - Long-term memory via a local JSON history file so prior analyses can inform later runs
 
 This allows the system to surface regressions and improvements when the same object is reviewed multiple times.
 
-## Tool Use
+## Tool Use (Planned Extended Graph)
 
-The `schema_fetcher` node relies on two read-only retrieval tools:
+The schema-fetcher stage relies on two read-only retrieval tools:
 
 - A source retrieval tool to fetch stored procedure DDL or recent ad-hoc query text
 - An execution-plan retrieval tool to fetch a logical execution plan for SQL statements
@@ -96,7 +99,7 @@ The current design includes multiple guardrails:
 - Pydantic validation for agent responses
 - Secret detection before prompts are sent to the model
 
-## Repository layout
+## Repository Layout
 
 The codebase is a uv workspace (Python) plus a single npm package (frontend).
 
@@ -134,10 +137,10 @@ npm install --prefix apps/frontend
 
 ```bash
 cp .env.example .env
-# edit .env to add ANTHROPIC_API_KEY, GOOGLE_API_KEY
+# edit .env to add the keys for the providers you plan to use
 ```
 
-## Running the stack
+## Running the Stack
 
 ### Without Docker (local dev)
 
@@ -149,9 +152,22 @@ bash scripts/dev.sh
 scripts/dev.ps1
 ```
 
-This starts the MCP server, the lint-auditor service, the orchestrator, and the
-Vite dev server. The UI is at http://localhost:5173, the orchestrator at
-http://localhost:8000.
+This starts the MCP server, the lint-auditor service, the orchestrator, and the Vite dev server.
+
+- Frontend: http://localhost:5173
+- Orchestrator: http://localhost:8000
+
+Optional split scripts:
+
+```bash
+# Linux / macOS
+bash scripts/run-backend.sh
+bash scripts/run-frontend.sh
+
+# Windows / PowerShell
+scripts/run-backend.ps1
+scripts/run-frontend.ps1
+```
 
 ### With Docker (compose)
 
@@ -172,7 +188,7 @@ docker build -f agents/Dockerfile \
 	-t code-critic/agent-lint-auditor .
 ```
 
-## Tests and linting
+## Tests and Linting
 
 ```bash
 bash scripts/test.sh       # uv run pytest + npm test
@@ -182,7 +198,9 @@ bash scripts/lint.sh --fix # auto-fix
 
 ## Status
 
-Piplens is still in active development. The notebook project description is the current design reference, and the implementation will evolve as the capstone is built and tested.
+PipeLens is still in active development. The current implementation is intentionally lint-first, while the broader original plan remains to expand into deeper multi-agent analysis across pipeline reliability, performance, security, and cost.
+
+The notebook project description is still a design reference, and the implementation will continue to evolve as the capstone is built and tested.
 
 ## Author
 

@@ -1,5 +1,4 @@
-# Start required local services without Docker:
-# mcp-server -> lint-auditor -> orchestrator -> frontend.
+# Start backend services only (mcp-server, lint-auditor, orchestrator).
 
 param(
     [switch]$Debug
@@ -8,7 +7,7 @@ param(
 $ErrorActionPreference = "Stop"
 Set-Location (Join-Path $PSScriptRoot "..")
 
-$pidsFile = Join-Path $env:TEMP "pipelens.pids"
+$pidsFile = Join-Path $env:TEMP "pipelens-backend.pids"
 Set-Content -Path $pidsFile -Value ""
 
 $jobs = @()
@@ -35,7 +34,7 @@ function Start-Bg {
 }
 
 function Stop-AllJobs {
-    Write-Host "`n>>> Shutting down services"
+    Write-Host "`n>>> Shutting down backend services"
     foreach ($j in $jobs) {
         try { Stop-Job -Job $j -ErrorAction SilentlyContinue } catch {}
         try { Remove-Job -Job $j -Force -ErrorAction SilentlyContinue } catch {}
@@ -85,19 +84,11 @@ try {
         }
     }
 
-    Start-Sleep -Seconds 1
-
-    Start-Bg -Label "frontend (:5173)" -Name "frontend" -ScriptBlock {
-        Set-Location (Join-Path $using:PWD "apps/frontend")
-        npm run dev
-    }
-
     Write-Host ""
-    Write-Host ">>> Services are up"
+    Write-Host ">>> Backend services are up"
     Write-Host "MCP Server:   http://localhost:9000/mcp"
     Write-Host "Lint Auditor: http://localhost:8001"
     Write-Host "Orchestrator: http://localhost:8000"
-    Write-Host "Frontend:     http://localhost:5173"
     Write-Host ">>> PIDs stored in $pidsFile"
     Write-Host ">>> Press Ctrl+C to stop all services"
 

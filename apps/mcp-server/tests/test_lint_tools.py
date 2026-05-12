@@ -2,7 +2,6 @@
 
 from mcp_server.server import lint_fix_python, lint_fix_sql
 
-
 EXPECTED_KEYS = {"initial_errors", "fixed_errors", "final_chunk", "final_errors"}
 
 

@@ -4,4 +4,4 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-exec bash ./run.sh
+exec bash ./run.sh "$@"

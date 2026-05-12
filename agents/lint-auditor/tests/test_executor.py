@@ -1,76 +1,218 @@
-"""Smoke tests for the lint-auditor executor and HTTP surface."""
+"""Tests for lint-auditor executor with LLM integration."""
 
-import sys
-from pathlib import Path
-from typing import Any
+from unittest.mock import MagicMock, patch
 
-sys.path.append(str(Path(__file__).resolve().parents[1] / "src"))
-
+import pytest
 from agent_lint_auditor.card import CARD
-from agent_lint_auditor.executor import detect_input_kind, execute
+from agent_lint_auditor.executor import execute
 from common import AgentInput
 from common.agent_runner import create_agent_app
 from fastapi.testclient import TestClient
 
 
-def test_detect_input_kind_variants() -> None:
-    """Input classification should detect sql, python, and mixed snippets."""
-    assert detect_input_kind("select * from users") == "sql"
-    assert detect_input_kind("def hello():\n    print('ok')") == "python"
-    assert detect_input_kind("def run():\n    cursor.execute('select 1')") == "mixed"
-
-
-def test_executor_mixed_input_calls_both_linters(monkeypatch: Any) -> None:
-    """Mixed payloads should produce findings from both SQL and Python tool calls."""
-
-    def fake_call_tool(tool_name: str, arguments: dict[str, Any]) -> dict[str, Any]:
-        if tool_name == "lint_fix_sql":
-            return {
-                "initial_errors": [{"code": "LT01", "description": "spacing"}],
-                "fixed_errors": [{"code": "LT01", "description": "spacing"}],
-                "final_errors": [],
-                "final_chunk": "SELECT 1;",
+@pytest.fixture
+def mock_agents_config():
+    """Mock agents.yaml configuration."""
+    return {
+        "models": {
+            "gpt-4": {
+                "provider": "openai",
+                "model_name": "gpt-4",
+                "temperature": 0.2,
+                "api_key_env": "OPENAI_API_KEY",
+            },
+            "claude-sonnet": {
+                "provider": "anthropic",
+                "model_name": "claude-3-5-sonnet-20241022",
+                "temperature": 0.2,
+                "api_key_env": "ANTHROPIC_API_KEY",
+            },
+        },
+        "agents": {
+            "lint-auditor": {
+                "default_model": "claude-sonnet",
+                "max_retries": 2,
+                "description": "SQL and Python linting",
             }
-        assert tool_name == "lint_fix_python"
-        assert "python_text" in arguments
-        return {
-            "initial_errors": [{"code": "F401", "description": "unused import"}],
-            "fixed_errors": [],
-            "final_errors": [],
-            "final_chunk": "print('ok')\n",
-        }
-
-    monkeypatch.setattr("agent_lint_auditor.executor._call_tool", fake_call_tool)
-
-    out = execute(AgentInput(text="def run():\n    cursor.execute('select 1')", metadata={}))
-    assert out.agent == "lint-auditor"
-    assert out.status == "ok"
-    assert len(out.findings) >= 2
-    assert any("[sql]" in finding.description for finding in out.findings)
-    assert any("[python]" in finding.description for finding in out.findings)
+        },
+    }
 
 
-def test_execute_endpoint_returns_lint_auditor_output(monkeypatch: Any) -> None:
+def test_execute_with_config_error():
+    """Test handling of missing config file."""
+    payload = AgentInput(text="SELECT * FROM table")
+
+    with patch("agent_lint_auditor.executor.load_agents_config") as mock_load:
+        mock_load.side_effect = FileNotFoundError("agents.yaml not found")
+        result = execute(payload)
+
+    assert result.status == "error"
+    assert any("Configuration error" in f.description for f in result.findings)
+
+
+def test_execute_with_invalid_model(mock_agents_config):
+    """Test handling of invalid model selection."""
+    payload = AgentInput(text="SELECT * FROM table", metadata={"model": "non-existent-model"})
+
+    with patch("agent_lint_auditor.executor.load_agents_config") as mock_load:
+        mock_load.return_value = mock_agents_config
+        with patch("agent_lint_auditor.executor.get_llm_for_agent") as mock_llm:
+            mock_llm.side_effect = ValueError("Model 'non-existent-model' not found")
+            result = execute(payload)
+
+    assert result.status == "error"
+    assert any("LLM initialization error" in f.description for f in result.findings)
+
+
+def test_execute_uses_default_model(mock_agents_config):
+    """Test that default model is used when not specified in metadata."""
+    payload = AgentInput(text="def hello(): pass")
+
+    with patch("agent_lint_auditor.executor.load_agents_config") as mock_load:
+        mock_load.return_value = mock_agents_config
+        with patch("agent_lint_auditor.executor.get_default_model_for_agent") as mock_default:
+            mock_default.return_value = "claude-sonnet"
+            with patch("agent_lint_auditor.executor.get_llm_for_agent") as mock_llm:
+                mock_llm_instance = MagicMock()
+                mock_llm.return_value = mock_llm_instance
+                with patch("agent_lint_auditor.executor.run_lint_fix_graph") as mock_graph:
+                    mock_graph.return_value = {
+                        "initial_errors": [],
+                        "fixed_errors": [],
+                        "remaining_errors": [],
+                        "final_code": "def hello(): pass",
+                    }
+                    result = execute(payload)
+
+    mock_default.assert_called_once()
+    assert result.status == "ok"
+
+
+def test_execute_respects_model_from_metadata(mock_agents_config):
+    """Test that model specified in metadata is used."""
+    payload = AgentInput(text="def hello(): pass", metadata={"model": "gpt-4"})
+
+    with patch("agent_lint_auditor.executor.load_agents_config") as mock_load:
+        mock_load.return_value = mock_agents_config
+        with patch("agent_lint_auditor.executor.get_llm_for_agent") as mock_llm:
+            mock_llm_instance = MagicMock()
+            mock_llm.return_value = mock_llm_instance
+            with patch("agent_lint_auditor.executor.run_lint_fix_graph") as mock_graph:
+                mock_graph.return_value = {
+                    "initial_errors": [],
+                    "fixed_errors": [],
+                    "remaining_errors": [],
+                    "final_code": "def hello(): pass",
+                }
+                result = execute(payload)
+
+    # Verify gpt-4 was used
+    mock_llm.assert_called_once_with("gpt-4", mock_agents_config)
+    assert result.status == "ok"
+
+
+def test_workflow_respects_max_retries(mock_agents_config):
+    """Test that max_retries from config is passed to workflow."""
+    payload = AgentInput(text="def hello(): pass")
+
+    with patch("agent_lint_auditor.executor.load_agents_config") as mock_load:
+        mock_load.return_value = mock_agents_config
+        with patch("agent_lint_auditor.executor.get_default_model_for_agent") as mock_default:
+            mock_default.return_value = "claude-sonnet"
+            with patch("agent_lint_auditor.executor.get_llm_for_agent") as mock_llm:
+                mock_llm_instance = MagicMock()
+                mock_llm.return_value = mock_llm_instance
+                with patch("agent_lint_auditor.executor.run_lint_fix_graph") as mock_graph:
+                    mock_graph.return_value = {
+                        "initial_errors": [],
+                        "fixed_errors": [],
+                        "remaining_errors": [],
+                        "final_code": "def hello(): pass",
+                    }
+                    result = execute(payload)
+
+    # Verify max_retries=2 was passed
+    assert result.status == "ok"
+    mock_graph.assert_called_once()
+    call_kwargs = mock_graph.call_args[1]
+    assert call_kwargs["max_retries"] == 2
+
+
+def test_execute_converts_errors_to_findings(mock_agents_config):
+    """Test that workflow errors are properly converted to findings."""
+    payload = AgentInput(text="def hello(): pass")
+
+    with patch("agent_lint_auditor.executor.load_agents_config") as mock_load:
+        mock_load.return_value = mock_agents_config
+        with patch("agent_lint_auditor.executor.get_default_model_for_agent") as mock_default:
+            mock_default.return_value = "claude-sonnet"
+            with patch("agent_lint_auditor.executor.get_llm_for_agent") as mock_llm:
+                mock_llm_instance = MagicMock()
+                mock_llm.return_value = mock_llm_instance
+                with patch("agent_lint_auditor.executor.run_lint_fix_graph") as mock_graph:
+                    mock_graph.return_value = {
+                        "initial_errors": [
+                            {
+                                "line_no": 1,
+                                "line_pos": 1,
+                                "code": "E001",
+                                "description": "Test error",
+                            }
+                        ],
+                        "fixed_errors": [],
+                        "remaining_errors": [],
+                        "final_code": "def hello(): pass",
+                    }
+                    result = execute(payload)
+
+    assert result.status == "ok"
+    assert len(result.findings) >= 1
+    assert any("linting" in f.description for f in result.findings)
+
+
+def test_execute_returns_final_code(mock_agents_config):
+    """Test that final code from workflow is returned as output_text."""
+    payload = AgentInput(text="def hello(): pass")
+    expected_code = "def hello():\n    pass"
+
+    with patch("agent_lint_auditor.executor.load_agents_config") as mock_load:
+        mock_load.return_value = mock_agents_config
+        with patch("agent_lint_auditor.executor.get_default_model_for_agent") as mock_default:
+            mock_default.return_value = "claude-sonnet"
+            with patch("agent_lint_auditor.executor.get_llm_for_agent") as mock_llm:
+                mock_llm_instance = MagicMock()
+                mock_llm.return_value = mock_llm_instance
+                with patch("agent_lint_auditor.executor.run_lint_fix_graph") as mock_graph:
+                    mock_graph.return_value = {
+                        "initial_errors": [],
+                        "fixed_errors": [],
+                        "remaining_errors": [],
+                        "final_code": expected_code,
+                    }
+                    result = execute(payload)
+
+    assert result.output_text == expected_code
+
+
+def test_execute_endpoint_returns_lint_auditor_output(mock_agents_config) -> None:
     """The HTTP /execute endpoint should return lint-auditor AgentOutput payloads."""
-
-    def fake_call_tool(tool_name: str, arguments: dict[str, Any]) -> dict[str, Any]:
-        if tool_name == "lint_fix_sql":
-            return {
-                "initial_errors": [],
-                "fixed_errors": [],
-                "final_errors": [],
-                "final_chunk": "SELECT 1;",
-            }
-        return {
-            "initial_errors": [],
-            "fixed_errors": [],
-            "final_errors": [],
-            "final_chunk": arguments.get("python_text", ""),
-        }
-
-    monkeypatch.setattr("agent_lint_auditor.executor._call_tool", fake_call_tool)
-
     client = TestClient(create_agent_app(CARD, execute))
-    res = client.post("/execute", json={"text": "select 1", "metadata": {}})
+
+    with patch("agent_lint_auditor.executor.load_agents_config") as mock_load:
+        mock_load.return_value = mock_agents_config
+        with patch("agent_lint_auditor.executor.get_default_model_for_agent") as mock_default:
+            mock_default.return_value = "claude-sonnet"
+            with patch("agent_lint_auditor.executor.get_llm_for_agent") as mock_llm:
+                mock_llm.return_value = MagicMock()
+                with patch("agent_lint_auditor.executor.run_lint_fix_graph") as mock_graph:
+                    mock_graph.return_value = {
+                        "initial_errors": [],
+                        "fixed_errors": [],
+                        "remaining_errors": [],
+                        "final_code": "SELECT 1;",
+                        "fix_report": [],
+                    }
+                    res = client.post("/execute", json={"text": "select 1", "metadata": {}})
+
     assert res.status_code == 200
     assert res.json()["agent"] == "lint-auditor"

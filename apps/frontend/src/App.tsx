@@ -1,54 +1,45 @@
-import { useState } from "react";
-import { critique, type FindingsReport } from "./api/orchestrator";
+import { useState, type FormEvent } from "react";
+import { critique, parseImprovedCode, type FindingsReport } from "./api/orchestrator";
+import { AnalysisShell } from "./components/AnalysisShell.tsx";
+import type { Page } from "./components/types";
 
 export default function App() {
+  const [page, setPage] = useState<Page>("analyze");
   const [input, setInput] = useState("");
   const [report, setReport] = useState<FindingsReport | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [apiError, setApiError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function onSubmit(event: FormEvent) {
+    event.preventDefault();
     setLoading(true);
-    setError(null);
+    setApiError(null);
+    setReport(null);
     try {
-      const res = await critique(input);
-      setReport(res);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "request failed");
+      const response = await critique(input);
+      setReport(response);
+    } catch (error) {
+      setApiError(error instanceof Error ? error.message : "Request failed");
     } finally {
       setLoading(false);
     }
   }
 
+  const payload = report ? parseImprovedCode(report.improved_code) : null;
+  const fixedCode = payload?.final_code ?? null;
+
   return (
-    <main style={{ fontFamily: "system-ui, sans-serif", padding: "2rem", maxWidth: 800 }}>
-      <h1>Code Critic</h1>
-      <form onSubmit={onSubmit}>
-        <label htmlFor="sql-input" style={{ display: "block", marginBottom: 8 }}>
-          SQL query or stored procedure name:
-        </label>
-        <textarea
-          id="sql-input"
-          rows={6}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          style={{ width: "100%", fontFamily: "monospace" }}
-        />
-        <button type="submit" disabled={loading || !input.trim()} style={{ marginTop: 8 }}>
-          {loading ? "Analyzing…" : "Critique"}
-        </button>
-      </form>
-
-      {error && <p role="alert" style={{ color: "crimson" }}>{error}</p>}
-
-      {report && (
-        <section aria-label="Findings report" style={{ marginTop: "2rem" }}>
-          <h2>Report from {report.agent}</h2>
-          <p>Status: {report.status}</p>
-          <p>{report.findings.length} finding(s)</p>
-        </section>
-      )}
-    </main>
+    <AnalysisShell
+      page={page}
+      setPage={setPage}
+      input={input}
+      setInput={setInput}
+      fixedCode={fixedCode}
+      loading={loading}
+      onSubmit={onSubmit}
+      apiError={apiError}
+      report={report}
+      payload={payload}
+    />
   );
 }

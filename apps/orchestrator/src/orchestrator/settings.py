@@ -13,6 +13,7 @@ class Settings(BaseSettings):
 
     agent_lint_auditor_url: str = "http://127.0.0.1:8001"
     mcp_server_url: str = "http://127.0.0.1:9000/mcp"
+    agents_config_path: str = "./agents.yaml"
 
 
 settings = Settings()

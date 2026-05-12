@@ -1,4 +1,4 @@
 # Deprecated alias; kept for compatibility.
 
 $ErrorActionPreference = "Stop"
-& (Join-Path $PSScriptRoot "run.ps1")
+& (Join-Path $PSScriptRoot "run.ps1") @args

@@ -5,6 +5,13 @@ description = "SQL Code Critic — multi-agent system (workspace root, not insta
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
+    "a2a-sdk[http]>=1.0.2",
+    "langchain-anthropic>=1.4.3",
+    "langchain-core>=1.3.3",
+    "langchain-google-genai>=4.2.2",
+    "langchain-openai>=1.2.1",
+    "langgraph>=1.1.10",
+    "pyyaml>=6.0.3",
     "snowflake-snowpark-python>=1.50.0",
     "sqlfluff>=4.1.0",
 ]
@@ -83,6 +90,10 @@ exclude = [
 
 [[tool.mypy.overrides]]
 module = ["a2a.*", "fastmcp.*", "snowflake.*", "keyring.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["yaml", "google.protobuf.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

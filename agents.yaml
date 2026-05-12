@@ -1,0 +1,62 @@
+# Centralized configuration for all agents
+# Model definitions and agent-specific settings
+
+models:
+  # OpenAI models
+  gpt-4:
+    provider: "openai"
+    model_name: "gpt-4"
+    temperature: 0.2
+    api_key_env: "OPENAI_API_KEY"
+  
+  gpt-3.5-turbo:
+    provider: "openai"
+    model_name: "gpt-3.5-turbo"
+    temperature: 0.2
+    api_key_env: "OPENAI_API_KEY"
+
+  # Anthropic Claude models
+  claude-opus:
+    provider: "anthropic"
+    model_name: "claude-3-opus-20240229"
+    temperature: 0.2
+    api_key_env: "ANTHROPIC_API_KEY"
+
+  claude-sonnet:
+    provider: "anthropic"
+    model_name: "claude-sonnet-4-6"
+    temperature: 0.2
+    api_key_env: "ANTHROPIC_API_KEY"
+
+  claude-haiku:
+    provider: "anthropic"
+    model_name: "claude-haiku-4-5"
+    temperature: 0.2
+    api_key_env: "ANTHROPIC_API_KEY"
+
+  # Google Gemini models
+  gemini-2.0-flash:
+    provider: "google"
+    model_name: "gemini-2.0-flash"
+    temperature: 0.2
+    api_key_env: "GOOGLE_API_KEY"
+
+  gemini-pro:
+    provider: "google"
+    model_name: "gemini-pro"
+    temperature: 0.2
+    api_key_env: "GOOGLE_API_KEY"
+  
+  gemma-4-26b-a4b-it:
+    provider: "google"
+    model_name: "gemma-4-26b-a4b-it"
+    temperature: 0.2
+    api_key_env: "GOOGLE_API_KEY"
+
+# Agent-specific configuration
+agents:
+  lint-auditor:
+    default_model: "claude-haiku"  # Used if no model specified in request
+    max_retries: 3
+    client_timeout_seconds: 600  # 10 minutes — covers full MCP + LLM round-trips
+    description: "SQL and Python linting with LLM-assisted fixes"
