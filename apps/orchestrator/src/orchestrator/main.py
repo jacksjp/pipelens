@@ -1,4 +1,4 @@
-"""FastAPI orchestrator entry point for the Code Critic system."""
+"""FastAPI orchestrator entry point for the Pipelens system."""
 
 from common import FindingsReport
 from fastapi import FastAPI
@@ -6,7 +6,7 @@ from pydantic import BaseModel
 
 from orchestrator.graph import run_lint
 
-app = FastAPI(title="Code Critic Orchestrator", version="0.1.0")
+app = FastAPI(title="Pipelens Orchestrator", version="0.1.0")
 
 
 class CritiqueRequest(BaseModel):

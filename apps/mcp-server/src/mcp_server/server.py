@@ -1,4 +1,4 @@
-"""FastMCP server skeleton for the Code Critic system.
+"""FastMCP server skeleton for the Pipelens system.
 
 Exposes lightweight lint/fix tools for SQL and Python snippets.
 """
@@ -11,7 +11,7 @@ from mcp_server.lint_validators.python_lint_checker import lint_fix_python as ru
 from mcp_server.lint_validators.sql_lint_checker import lint_fix_sql as run_sql_lint_fix
 from mcp_server.settings import settings
 
-mcp = FastMCP("code-critic")
+mcp = FastMCP("pipelens")
 
 
 @mcp.tool()

@@ -185,7 +185,7 @@ The `agents/Dockerfile` is shared; the agent is selected by build args:
 docker build -f agents/Dockerfile \
 	--build-arg AGENT_NAME=lint-auditor \
 	--build-arg AGENT_MODULE=agent_lint_auditor \
-	-t code-critic/agent-lint-auditor .
+	-t pipelens/agent-lint-auditor .
 ```
 
 ## Tests and Linting

@@ -5,7 +5,7 @@ import App from "../src/App";
 describe("App", () => {
   it("renders the heading and submit button", () => {
     render(<App />);
-    expect(screen.getByRole("heading", { name: /code critic/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /pipelens/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /critique/i })).toBeInTheDocument();
   });
 

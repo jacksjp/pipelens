@@ -1,7 +1,7 @@
 # mcp-server
 
 FastMCP server exposing shared tools (Snowflake DDL fetch, ETL extraction)
-to the Code Critic agents over the streamable-http transport.
+to the Pipelens agents over the streamable-http transport.
 
 ## Exposed tools
 

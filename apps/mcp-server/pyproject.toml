@@ -1,7 +1,7 @@
 [project]
 name = "mcp-server"
 version = "0.1.0"
-description = "FastMCP server exposing shared tools (Snowflake DDL fetch, etc.) for Code Critic agents."
+description = "FastMCP server exposing shared tools (Snowflake DDL fetch, etc.) for Pipelens agents."
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [

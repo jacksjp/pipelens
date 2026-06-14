@@ -11,7 +11,7 @@
 #   docker build -f agents/Dockerfile \
 #     --build-arg AGENT_NAME=lint-auditor \
 #     --build-arg AGENT_MODULE=agent_lint_auditor \
-#     -t code-critic/agent-lint-auditor .
+#     -t pipelens/agent-lint-auditor .
 
 ARG PYTHON_VERSION=3.14
 FROM python:${PYTHON_VERSION}-slim AS base

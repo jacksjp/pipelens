@@ -1,7 +1,7 @@
 [project]
-name = "code-critic"
+name = "pipelens"
 version = "0.1.0"
-description = "SQL Code Critic — multi-agent system (workspace root, not installed)"
+description = "SQL Pipelens - multi-agent system (workspace root, not installed)"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [

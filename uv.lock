@@ -9,7 +9,7 @@ resolution-markers = [
 [manifest]
 members = [
     "agent-lint-auditor",
-    "code-critic",
+    "pipelens",
     "common",
     "mcp-server",
     "orchestrator",
@@ -381,7 +381,7 @@ wheels = [
 ]
 
 [[package]]
-name = "code-critic"
+name = "pipelens"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

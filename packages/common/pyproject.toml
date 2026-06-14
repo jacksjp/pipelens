@@ -1,7 +1,7 @@
 [project]
 name = "common"
 version = "0.1.0"
-description = "Shared models and agent runner for Code Critic agents."
+description = "Shared models and agent runner for Pipelens agents."
 requires-python = ">=3.14"
 dependencies = [
     "pydantic>=2.0",

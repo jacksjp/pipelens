@@ -1,7 +1,7 @@
 [project]
 name = "orchestrator"
 version = "0.1.0"
-description = "FastAPI orchestrator that drives the Code Critic agent graph."
+description = "FastAPI orchestrator that drives the Pipelens agent graph."
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [

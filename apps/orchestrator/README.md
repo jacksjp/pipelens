@@ -1,6 +1,6 @@
 # orchestrator
 
-FastAPI service that fronts the Code Critic agent graph for the React UI.
+FastAPI service that fronts the Pipelens agent graph for the React UI.
 
 ## Endpoints
 

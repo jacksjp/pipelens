@@ -1,23 +1,55 @@
-<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 130 90">
   <defs>
-    <linearGradient id="pipe" x1="24" y1="128" x2="232" y2="128" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#7cc4ff" />
-      <stop offset="1" stop-color="#1b7bd7" />
+    <style>@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;700&amp;display=swap');</style>
+    <linearGradient id="gaugeRing" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#4fc3f7"/>
+      <stop offset="100%" stop-color="#0288d1"/>
     </linearGradient>
-    <radialGradient id="lens" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(128 124) rotate(90) scale(60)">
-      <stop stop-color="#ffffff" stop-opacity="0.8" />
-      <stop offset="1" stop-color="#d8ecff" stop-opacity="0.18" />
+    <radialGradient id="gaugeFace" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#e3f2fd" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#29b6f6" stop-opacity="0.06"/>
     </radialGradient>
+    <linearGradient id="pipeH" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#4dd0e1"/>
+      <stop offset="100%" stop-color="#0097a7"/>
+    </linearGradient>
+    <linearGradient id="valve" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#81d4fa"/>
+      <stop offset="100%" stop-color="#0277bd"/>
+    </linearGradient>
   </defs>
-  <rect width="256" height="256" rx="56" fill="#0d47a1" />
-  <path d="M28 128H88C104.3 128 117.5 114.8 117.5 98.5V98.5C117.5 82.2 130.7 69 147 69H228" stroke="url(#pipe)" stroke-width="16" stroke-linecap="round" />
-  <path d="M28 178H76C99.8 178 119 158.8 119 135V135C119 111.2 138.2 92 162 92H228" stroke="url(#pipe)" stroke-width="16" stroke-linecap="round" opacity="0.72" />
-  <circle cx="58" cy="128" r="12" fill="#90caf9" />
-  <circle cx="128" cy="128" r="12" fill="#90caf9" />
-  <circle cx="198" cy="128" r="12" fill="#90caf9" />
-  <circle cx="128" cy="124" r="70" fill="url(#lens)" stroke="#ffffff" stroke-width="8" />
-  <path d="M160 160L198 198" stroke="#ffffff" stroke-width="16" stroke-linecap="round" />
-  <path d="M96 117L114 132L96 147" stroke="#ffffff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.78" />
-  <path d="M136 117L154 132L136 147" stroke="#ffffff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.78" />
-  <text x="128" y="150" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="54" font-weight="800" fill="#ffffff" letter-spacing="-4">PL</text>
+
+  <!-- Gauge face fill -->
+  <circle cx="50" cy="30" r="21" fill="url(#gaugeFace)"/>
+  <!-- Gauge outer ring -->
+  <circle cx="50" cy="30" r="21" fill="none" stroke="url(#gaugeRing)" stroke-width="5.5"/>
+
+  <!-- Needle -->
+  <line x1="51" y1="31" x2="36.5" y2="22.5" stroke="#ef9a9a" stroke-width="2" stroke-linecap="round" opacity="0.85"/>
+  <!-- Pivot -->
+  <circle cx="50" cy="30" r="2.8" fill="#4fc3f7"/>
+
+  <!-- Pipe stem -->
+  <rect x="46.5" y="51" width="7" height="12" fill="url(#pipeH)" rx="1"/>
+  <!-- Horizontal pipe body -->
+  <rect x="18" y="60" width="94" height="10" fill="url(#pipeH)" rx="2"/>
+
+  <!-- Left valve block + end cap -->
+  <rect x="6"   y="58" width="14" height="14" fill="url(#valve)" rx="1.5"/>
+  <rect x="2"   y="61" width="6"  height="8"  fill="url(#valve)" rx="1"/>
+  <!-- Right valve block + end cap -->
+  <rect x="110" y="58" width="14" height="14" fill="url(#valve)" rx="1.5"/>
+  <rect x="122" y="61" width="6"  height="8"  fill="url(#valve)" rx="1"/>
+
+  <!-- Label -->
+  <line x1="30" y1="72.5" x2="100" y2="72.5" stroke="#0288d1" stroke-width="0.8" opacity="0.5"/>
+  <text x="46" y="84"
+    font-family="'Rajdhani', 'Trebuchet MS', sans-serif"
+    font-size="13" font-weight="700" letter-spacing="0.3"
+    fill="#e0f7fa" text-anchor="middle">PIPE</text>
+  <text x="87" y="84"
+    font-family="'Rajdhani', 'Trebuchet MS', sans-serif"
+    font-size="13" font-weight="400" letter-spacing="0.3"
+    fill="#4fc3f7" text-anchor="middle">LENS</text>
+
 </svg>
