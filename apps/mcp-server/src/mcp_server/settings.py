@@ -10,7 +10,7 @@ class Settings(BaseSettings):
 
     host: str = "0.0.0.0"
     port: int = 9000
-    path: str = "/mcp"
+    mcp_path: str = "/mcp"
 
 
 settings = Settings()

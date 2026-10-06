@@ -35,7 +35,7 @@ def lint_fix_python(python_text: str) -> dict[str, Any]:
 def main() -> None:
     """Run the MCP server over streamable-http transport."""
     # Ensure path is valid
-    path = settings.path
+    path = settings.mcp_path
     if not path or not path.startswith("/"):
         path = "/mcp"
 
