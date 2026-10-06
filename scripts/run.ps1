@@ -11,6 +11,14 @@ Set-Location (Join-Path $PSScriptRoot "..")
 $pidsFile = Join-Path $env:TEMP "pipelens.pids"
 Set-Content -Path $pidsFile -Value ""
 
+if (Test-Path .env) {
+    Get-Content .env | ForEach-Object {
+        if ($_ -match '^\s*([^#=\s]+)\s*=\s*(.*)$') { Set-Item -Path "env:$($Matches[1])" -Value $Matches[2].Trim('"') }
+    }
+}
+$logDir = if ($env:PIPELENS_LOG_DIR) { $env:PIPELENS_LOG_DIR } else { "logs" }
+New-Item -ItemType Directory -Force -Path $logDir | Out-Null
+
 $jobs = @()
 
 function Start-Bg {
@@ -103,7 +111,8 @@ try {
 
     while ($true) {
         foreach ($j in $jobs) {
-            Receive-Job -Job $j -Keep -ErrorAction SilentlyContinue | Out-Host
+            Receive-Job -Job $j -ErrorAction SilentlyContinue |
+                Tee-Object -FilePath (Join-Path $logDir "$($j.Name).log") -Append | Out-Host
         }
         Start-Sleep -Seconds 2
     }

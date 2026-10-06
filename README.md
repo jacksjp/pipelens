@@ -157,6 +157,11 @@ This starts the MCP server, the lint-auditor service, the orchestrator, and the 
 - Frontend: http://localhost:5173
 - Orchestrator: http://localhost:8000
 
+Logs for each service are written to `logs/` (`mcp-server.log`, `lint-auditor.log`, `orchestrator.log`, `frontend.log`). Change the folder by setting `PIPELENS_LOG_DIR` in `.env` or in your shell:
+
+```bash
+PIPELENS_LOG_DIR=/var/log/pipelens bash scripts/dev.sh
+```
 Optional split scripts:
 
 ```bash

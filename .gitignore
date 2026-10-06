@@ -37,6 +37,7 @@ env/
 # Node.js
 node_modules/
 npm-debug.log
+logs/
 yarn-error.log
 package-lock.json
 yarn.lock

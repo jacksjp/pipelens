@@ -19,6 +19,10 @@ fi
 PIDS_FILE="/tmp/pipelens.pids"
 : > "$PIDS_FILE"
 
+if [[ -f .env ]]; then set -a; source .env; set +a; fi
+LOG_DIR="${PIPELENS_LOG_DIR:-logs}"
+mkdir -p "$LOG_DIR"
+
 PIDS=()
 cleanup() {
     echo
@@ -34,8 +38,9 @@ trap cleanup INT TERM EXIT
 start_bg() {
     local label="$1"
     shift
+    local name="${label%% *}"
     echo ">>> Starting ${label}"
-    "$@" &
+    "$@" > >(tee -a "$LOG_DIR/${name}.log") 2>&1 &
     local pid=$!
     PIDS+=("$pid")
     echo "$pid" >> "$PIDS_FILE"
@@ -71,6 +76,7 @@ echo "Lint Auditor: http://localhost:8001"
 echo "Orchestrator: http://localhost:8000"
 echo "Frontend:     http://localhost:5173"
 echo ">>> PIDs stored in ${PIDS_FILE}"
+echo ">>> Logs written to ${LOG_DIR}"
 echo ">>> Press Ctrl+C to stop all services"
 
 wait
